@@ -6,7 +6,7 @@ WORKDIR /app
 COPY package.json yarn.lock* ./
 
 # 安装依赖
-RUN yarn install --frozen-lockfile --production
+RUN yarn install --frozen-lockfile
 
 # 复制源代码
 COPY src/ ./src/
