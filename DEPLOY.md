@@ -12,6 +12,7 @@
 | `ADMIN_API_PREFIX` | V2Board 后台路径 | `admin` 或 `maoadmin` |
 | `ADMIN_EMAIL` | V2Board 管理员邮箱 | `admin@example.com` |
 | `ADMIN_PASSWORD` | V2Board 管理员密码 | `your_secure_password` |
+| `DISTRIBUTOR_ACCESS_PASSWORD` | 分销商后台访问密码 | `YourAccessPassword123` |
 
 ### 获取 V2Board 后台路径
 
@@ -23,12 +24,12 @@
 
 ---
 
-## 方式一：Docker Compose 部署（推荐）
+## Docker Compose 部署（唯一推荐方式）
 
 ### 1. 克隆项目
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/pkhosn/v2et-security-middleware
 cd v2et-security-middleware
 ```
 
@@ -56,6 +57,9 @@ ADMIN_API_PREFIX=admin
 # V2Board 管理员账号（必填）
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=your_secure_password
+
+# 分销商后台访问密码（推荐设置）
+DISTRIBUTOR_ACCESS_PASSWORD=YourAccessPassword123
 ```
 
 ### 3. 启动服务
@@ -79,76 +83,56 @@ curl http://localhost:3001/api/v1/distributor/status
 {
   "status": "ok",
   "tokenValid": true,
+  "passwordProtected": true,
   "timestamp": 1234567890
 }
 ```
 
+### 5. 常用命令
+
+```bash
+# 查看日志
+docker-compose logs -f
+
+# 重启服务
+docker-compose restart
+
+# 停止服务
+docker-compose down
+
+# 更新镜像后重新部署
+docker-compose pull
+docker-compose up -d
+```
+
 ---
 
-## 方式二：Node.js 直接部署
+## Dockerfile（自定义构建）
 
-### 1. 环境要求
+如果需要自定义镜像：
 
-- Node.js >= 18.0.0
-- npm >= 9.0.0
+```dockerfile
+FROM node:20-alpine
 
-### 2. 安装依赖
+WORKDIR /app
 
-```bash
-npm install
-```
+# 复制依赖配置
+COPY package*.json ./
 
-### 3. 配置环境变量
+# 安装依赖
+RUN npm ci --only=production
 
-```bash
-cp .env.example .env
-vim .env
-```
+# 复制源代码
+COPY . .
 
-### 4. 编译并运行
+# 编译 TypeScript
+RUN npm run build
 
-```bash
-# 开发模式（热重载）
-npm run dev
-
-# 生产模式
-npm run build
-npm start
-```
-
-### 5. 后台运行（生产环境）
-
-使用 PM2：
-
-```bash
-# 安装 PM2
-npm install -g pm2
+# 暴露端口
+EXPOSE 3001
 
 # 启动服务
-pm2 start dist/index.js --name v2et-middleware
-
-# 开机自启
-pm2 startup
-pm2 save
-```
-
----
-
-## 方式三：Docker 直接运行
-
-```bash
-# 1. 构建镜像
-docker build -t v2et-security-middleware .
-
-# 2. 运行容器
-docker run -d \
-  --name v2et-middleware \
-  -p 3001:3001 \
-  -e BACKEND_DOMAIN=https://cs.example.com \
-  -e ADMIN_API_PREFIX=admin \
-  -e ADMIN_EMAIL=admin@example.com \
-  -e ADMIN_PASSWORD=your_secure_password \
-  v2et-security-middleware
+CMD ["node", "dist/index.js"]
 ```
 
 ---
@@ -209,8 +193,6 @@ server {
 ```bash
 # 查看日志
 docker-compose logs -f
-# 或
-pm2 logs v2et-middleware
 ```
 
 ### 2. Token 初始化失败
@@ -220,12 +202,18 @@ pm2 logs v2et-middleware
 - 确认 `ADMIN_API_PREFIX` 路径正确
 - 测试管理员能否正常登录 V2Board 后台
 
-### 3. 跨域问题
+### 3. 容器重启
 
-确保前端配置了正确的中间件地址：
-```javascript
-// v2et-exchange-theme/src/api/distributor.js
-const API_BASE = 'http://your-server-ip:3001'
+```bash
+# 查看容器状态
+docker-compose ps
+
+# 重启容器
+docker-compose restart
+
+# 重新构建
+docker-compose down
+docker-compose up -d --build
 ```
 
 ---
@@ -246,8 +234,8 @@ const API_BASE = 'http://your-server-ip:3001'
 ## 🆘 需要帮助？
 
 遇到问题请提供：
-1. 部署方式（Docker/Node.js）
-2. 错误日志
+1. Docker 日志（`docker-compose logs`）
+2. 错误信息
 3. V2Board 版本
 
 祝部署顺利！🚀
