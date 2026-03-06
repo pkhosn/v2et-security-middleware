@@ -1,0 +1,14 @@
+services:
+  v2et-middleware:
+    build: .
+    container_name: v2et-middleware
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: "3001"
+      BACKEND_DOMAIN: ${BACKEND_DOMAIN}
+      ADMIN_API_PREFIX: ${ADMIN_API_PREFIX}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      DISTRIBUTOR_ACCESS_PASSWORD: ${DISTRIBUTOR_ACCESS_PASSWORD}
+    restart: always

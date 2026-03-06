@@ -1,8 +1,8 @@
 import type Koa from 'koa'
 import KoaRouter from '@koa/router'
 import chalk from 'chalk'
-import { BackendService } from './services/backend'
-import { backendDomain, distributorAccessPassword } from './env'
+import { BackendService } from './services/backend.js'
+import { backendDomain, distributorAccessPassword } from './env.js'
 
 export const router = new KoaRouter()
 

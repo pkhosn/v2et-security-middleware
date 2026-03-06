@@ -1,5 +1,5 @@
 import chalk from 'chalk'
-import { backendDomain, adminApiPrefix, adminEmail, adminPassword } from '../env'
+import { backendDomain, adminApiPrefix, adminEmail, adminPassword } from '../env.js'
 
 interface Plan {
   id: number

@@ -2,9 +2,9 @@ import Koa from 'koa'
 import cors from '@koa/cors'
 import bodyParser from 'koa-bodyparser'
 import chalk from 'chalk'
-import { router } from './routes'
-import { port } from './env'
-import { BackendService } from './services/backend'
+import { router } from './routes.js'
+import { port } from './env.js'
+import { BackendService } from './services/backend.js'
 
 // 创建 Koa 应用
 const app = new Koa()
