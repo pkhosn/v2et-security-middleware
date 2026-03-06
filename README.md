@@ -114,6 +114,132 @@ curl http://localhost:3001/api/v1/distributor/status
 
 ---
 
+## 🔄 更新与维护
+
+### 可能需要修改的文件
+
+| 文件 | 用途 | 修改后操作 |
+|------|------|-----------|
+| `.env` | 修改 V2Board 地址、管理员账号、访问密码等 | 重启容器 |
+| `docker-compose.yml` | 修改端口、环境变量等 | 重新部署 |
+| 源代码 | 修改 API 逻辑、功能等 | 重新构建并部署 |
+
+### 场景 1：修改 `.env` 配置
+
+```bash
+# 1. 编辑配置
+cd /opt/v2et-security-middleware
+vim .env
+
+# 2. 重启容器（让新配置生效）
+docker-compose restart
+
+# 3. 验证
+curl http://localhost:3001/api/v1/distributor/status
+```
+
+**常见修改：**
+- 修改 V2Board 后端地址 → `BACKEND_DOMAIN`
+- 修改访问密码 → `DISTRIBUTOR_ACCESS_PASSWORD`
+- 修改管理员账号 → `ADMIN_EMAIL` / `ADMIN_PASSWORD`
+
+---
+
+### 场景 2：修改 `docker-compose.yml`
+
+```bash
+# 1. 编辑配置
+vim docker-compose.yml
+
+# 2. 重新部署（让新配置生效）
+docker-compose down
+docker-compose up -d
+
+# 3. 验证
+docker-compose ps
+```
+
+**常见修改：**
+- 修改端口映射（如 `3001:3001` → `8080:3001`）
+- 添加/修改环境变量
+
+---
+
+### 场景 3：更新代码（拉取最新代码）
+
+```bash
+# 1. 进入项目目录
+cd /opt/v2et-security-middleware
+
+# 2. 备份 .env 文件（重要！）
+cp .env .env.backup
+
+# 3. 拉取最新代码
+git pull
+
+# 4. 恢复 .env 文件
+cp .env.backup .env
+
+# 5. 重新构建并启动
+docker-compose down
+docker-compose up -d --build
+
+# 6. 验证
+docker-compose logs -f
+```
+
+---
+
+### 场景 4：修改源代码后部署
+
+```bash
+# 1. 在本地修改代码
+# 编辑 src/ 目录下的文件
+
+# 2. 提交并推送到 GitHub
+git add .
+git commit -m "修改说明"
+git push
+
+# 3. 在服务器上更新
+cd /opt/v2et-security-middleware
+git pull
+docker-compose down
+docker-compose up -d --build
+
+# 4. 验证
+curl http://localhost:3001/api/v1/distributor/status
+```
+
+---
+
+### 常用命令速查
+
+```bash
+# 查看服务状态
+docker-compose ps
+
+# 查看日志
+docker-compose logs -f
+
+# 重启服务
+docker-compose restart
+
+# 停止服务
+docker-compose down
+
+# 启动服务
+docker-compose up -d
+
+# 重新构建
+docker-compose up -d --build
+
+# 删除容器和数据
+docker-compose down -v
+```
+
+---
+
 ### 步骤 4：Node.js 部署（备选）⚠️
 
 > ⚠️ 此方式作为备选方案，推荐优先使用 Docker Compose
