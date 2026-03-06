@@ -24,16 +24,22 @@
 
 ---
 
-## Docker Compose 部署（唯一推荐方式）
+## 🚀 快速部署
 
-### 1. 克隆项目
+### 方式一：Docker Compose（推荐）⭐
+
+#### 1. 克隆项目
 
 ```bash
-git clone https://github.com/pkhosn/v2et-security-middleware
-cd v2et-security-middleware
+# 创建目录
+mkdir -p /opt/v2et-security-middleware
+cd /opt/v2et-security-middleware
+
+# 克隆代码
+git clone https://github.com/pkhosn/v2et-security-middleware .
 ```
 
-### 2. 配置环境变量
+#### 2. 配置环境变量
 
 ```bash
 # 复制示例配置
@@ -62,15 +68,40 @@ ADMIN_PASSWORD=your_secure_password
 DISTRIBUTOR_ACCESS_PASSWORD=YourAccessPassword123
 ```
 
-### 3. 启动服务
+#### 3. 创建 docker-compose.yml
 
-```bash
-docker-compose up -d
+创建 `docker-compose.yml` 文件：
+
+```yaml
+version: '3.8'
+
+services:
+  middleware:
+    image: node:20-alpine
+    container_name: v2et-middleware
+    working_dir: /app
+    volumes:
+      - .:/app
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - BACKEND_DOMAIN=${BACKEND_DOMAIN}
+      - ADMIN_API_PREFIX=${ADMIN_API_PREFIX}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - DISTRIBUTOR_ACCESS_PASSWORD=${DISTRIBUTOR_ACCESS_PASSWORD}
+    command: sh -c "npm install && npm run build && node dist/index.js"
+    restart: always
 ```
 
-### 4. 验证运行状态
+#### 4. 启动服务
 
 ```bash
+# 启动容器
+docker-compose up -d
+
 # 查看日志
 docker-compose logs -f
 
@@ -88,7 +119,7 @@ curl http://localhost:3001/api/v1/distributor/status
 }
 ```
 
-### 5. 常用命令
+#### 5. 常用命令
 
 ```bash
 # 查看日志
@@ -100,39 +131,76 @@ docker-compose restart
 # 停止服务
 docker-compose down
 
-# 更新镜像后重新部署
-docker-compose pull
-docker-compose up -d
+# 更新代码后重新部署
+git pull
+docker-compose down
+docker-compose up -d --build
 ```
 
 ---
 
-## Dockerfile（自定义构建）
+### 方式二：Node.js 直接部署（备选）
 
-如果需要自定义镜像：
+> ⚠️ 此方式作为备选方案，推荐优先使用 Docker Compose
 
-```dockerfile
-FROM node:20-alpine
+#### 1. 环境要求
 
-WORKDIR /app
+- Node.js >= 18.0.0
+- npm >= 9.0.0
 
-# 复制依赖配置
-COPY package*.json ./
+#### 2. 克隆项目
 
+```bash
+# 创建目录
+mkdir -p /opt/v2et-security-middleware
+cd /opt/v2et-security-middleware
+
+# 克隆代码
+git clone https://github.com/pkhosn/v2et-security-middleware .
+```
+
+#### 3. 配置环境变量
+
+```bash
+# 复制示例配置
+cp .env.example .env
+
+# 编辑配置文件
+vim .env
+```
+
+配置内容同上（Docker Compose 方式）。
+
+#### 4. 安装依赖并运行
+
+```bash
 # 安装依赖
-RUN npm ci --only=production
+npm install
 
-# 复制源代码
-COPY . .
-
-# 编译 TypeScript
-RUN npm run build
-
-# 暴露端口
-EXPOSE 3001
+# 编译
+npm run build
 
 # 启动服务
-CMD ["node", "dist/index.js"]
+npm start
+```
+
+#### 5. 后台运行（生产环境）
+
+使用 PM2 管理：
+
+```bash
+# 安装 PM2
+npm install -g pm2
+
+# 启动服务
+pm2 start dist/index.js --name v2et-middleware
+
+# 开机自启
+pm2 startup
+pm2 save
+
+# 查看日志
+pm2 logs v2et-middleware
 ```
 
 ---
@@ -148,35 +216,7 @@ ufw allow from 192.168.1.0/24 to any port 3001
 ufw enable
 ```
 
-**iptables：**
-```bash
-iptables -A INPUT -p tcp --dport 3001 -s 192.168.1.0/24 -j ACCEPT
-iptables -A INPUT -p tcp --dport 3001 -j DROP
-```
-
-### 2. Nginx 反向代理（HTTPS）
-
-```nginx
-server {
-    listen 443 ssl;
-    server_name middleware.example.com;
-
-    ssl_certificate /path/to/cert.pem;
-    ssl_certificate_key /path/to/key.pem;
-
-    location / {
-        proxy_pass http://localhost:3001;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        
-        # IP 白名单
-        allow 192.168.1.0/24;
-        deny all;
-    }
-}
-```
-
-### 3. 创建专用管理员账号
+### 2. 创建专用管理员账号
 
 建议创建一个仅用于分销商兑换的管理员账号：
 
@@ -191,8 +231,11 @@ server {
 ### 1. 服务无法启动
 
 ```bash
-# 查看日志
+# Docker 方式
 docker-compose logs -f
+
+# Node.js 方式
+pm2 logs v2et-middleware
 ```
 
 ### 2. Token 初始化失败
@@ -202,18 +245,14 @@ docker-compose logs -f
 - 确认 `ADMIN_API_PREFIX` 路径正确
 - 测试管理员能否正常登录 V2Board 后台
 
-### 3. 容器重启
+### 3. 端口被占用
 
 ```bash
-# 查看容器状态
-docker-compose ps
+# 查看占用端口的进程
+lsof -ti:3001
 
-# 重启容器
-docker-compose restart
-
-# 重新构建
-docker-compose down
-docker-compose up -d --build
+# 杀死进程
+lsof -ti:3001 | xargs kill -9
 ```
 
 ---
@@ -226,7 +265,6 @@ docker-compose up -d --build
 - [ ] 服务状态接口返回正常（`/api/v1/distributor/status`）
 - [ ] 管理员 Token 初始化成功（日志显示 `SUCCESS`）
 - [ ] 防火墙已配置，只允许信任 IP 访问
-- [ ] 生产环境使用 HTTPS
 - [ ] 已备份 `.env` 配置文件
 
 ---
@@ -234,8 +272,8 @@ docker-compose up -d --build
 ## 🆘 需要帮助？
 
 遇到问题请提供：
-1. Docker 日志（`docker-compose logs`）
-2. 错误信息
+1. 部署方式（Docker/Node.js）
+2. 错误日志
 3. V2Board 版本
 
 祝部署顺利！🚀
