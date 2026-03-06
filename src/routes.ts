@@ -49,8 +49,8 @@ router.post('/api/v1/distributor/auth', async (ctx: Koa.Context) => {
     return
   }
 
-  // 验证密码
-  if (password === distributorAccessPassword) {
+  // 验证密码：必须完全匹配且密码不能为空
+  if (password && password === distributorAccessPassword) {
     // 生成会话 token（简单实现，生产环境建议用 JWT）
     const sessionToken = `sess_${Date.now()}_${Math.random().toString(36).slice(2)}`
     validSessions.add(sessionToken)

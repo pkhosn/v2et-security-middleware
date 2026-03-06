@@ -8,7 +8,8 @@ export const adminEmail = process.env.ADMIN_EMAIL || ''
 export const adminPassword = process.env.ADMIN_PASSWORD || ''
 
 // 分销商后台访问密码（可选）
-export const distributorAccessPassword = process.env.DISTRIBUTOR_ACCESS_PASSWORD || ''
+// 只有当环境变量明确设置且非空时才启用密码验证
+export const distributorAccessPassword = process.env.DISTRIBUTOR_ACCESS_PASSWORD?.trim() || undefined
 
 // 可选配置
 export const mailHost = process.env.MAIL_HOST || ''
