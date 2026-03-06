@@ -61,35 +61,7 @@ ADMIN_PASSWORD=your_secure_password
 DISTRIBUTOR_ACCESS_PASSWORD=YourAccessPassword123
 ```
 
-### 步骤 3：Docker Compose 部署（推荐）⭐
-
-创建 `docker compose.yml` 文件：
-
-```yaml
-version: '3.8'
-
-services:
-  middleware:
-    image: node:20-alpine
-    container_name: v2et-middleware
-    working_dir: /app
-    volumes:
-      - .:/app
-    ports:
-      - "3001:3001"
-    environment:
-      - NODE_ENV=production
-      - PORT=3001
-      - BACKEND_DOMAIN=${BACKEND_DOMAIN}
-      - ADMIN_API_PREFIX=${ADMIN_API_PREFIX}
-      - ADMIN_EMAIL=${ADMIN_EMAIL}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
-      - DISTRIBUTOR_ACCESS_PASSWORD=${DISTRIBUTOR_ACCESS_PASSWORD}
-    command: sh -c "npm install && npm run build && node dist/index.js"
-    restart: always
-```
-
-启动服务：
+### 步骤 3：启动服务 ⭐
 
 ```bash
 # 启动容器
