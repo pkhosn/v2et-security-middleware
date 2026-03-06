@@ -175,6 +175,7 @@ cd /opt/v2et-security-middleware
 git pull
 docker compose down
 docker compose up -d --build
+docker compose build --no-cache
 
 # 4. 验证
 curl http://localhost:3001/api/v1/distributor/status
