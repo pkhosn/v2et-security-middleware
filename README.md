@@ -8,53 +8,178 @@ V2Board 免登中间件服务 - 专为分销商兑换场景设计
 - ✅ 免登创建订单 + 自动注册
 - ✅ 免登结算订单（支持 0 元兑换）
 - ✅ 管理员权限代客操作
+- ✅ 访问密码保护
 - ✅ 支持加密转发（可选）
-- ✅ 支持邮件通知（可选）
 
-## 快速部署
+---
 
-### 方式一：Docker Compose（推荐）
+## 🚀 快速部署
+
+### 前提条件
+
+- ✅ 已有一台 Linux 服务器（Ubuntu/CentOS）
+- ✅ 已安装 Docker 和 Docker Compose
+- ✅ 已准备好 V2Board 管理员账号
+
+### 步骤 1：拉取代码
 
 ```bash
-# 1. 复制环境变量配置
-cp .env.example .env
+# 在服务器上创建目录
+mkdir -p /opt/v2et-security-middleware
+cd /opt/v2et-security-middleware
 
-# 2. 编辑 .env 文件
-vim .env
-# 必须配置：
-# - BACKEND_DOMAIN=https://your-v2board.com
-# - ADMIN_API_PREFIX=admin  # V2Board 后台路径
-# - ADMIN_EMAIL=admin@example.com
-# - ADMIN_PASSWORD=your_password
-
-# 3. 启动服务
-docker-compose up -d
-
-# 4. 查看日志
-docker-compose logs -f
+# 克隆代码
+git clone https://github.com/pkhosn/v2et-security-middleware .
 ```
 
-### 方式二：Node.js 直接运行
+### 步骤 2：配置环境变量
+
+```bash
+# 复制示例配置
+cp .env.example .env
+
+# 编辑配置文件
+vim .env
+```
+
+**必填配置：**
+```bash
+# 服务端口
+PORT=3001
+
+# V2Board 后端地址（必填）
+BACKEND_DOMAIN=https://cs.example.com
+
+# V2Board 后台管理路径（必填）
+ADMIN_API_PREFIX=admin
+
+# V2Board 管理员账号（必填）
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=your_secure_password
+
+# 分销商后台访问密码（推荐设置）
+DISTRIBUTOR_ACCESS_PASSWORD=YourAccessPassword123
+```
+
+### 步骤 3：Docker Compose 部署（推荐）⭐
+
+创建 `docker-compose.yml` 文件：
+
+```yaml
+version: '3.8'
+
+services:
+  middleware:
+    image: node:20-alpine
+    container_name: v2et-middleware
+    working_dir: /app
+    volumes:
+      - .:/app
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - BACKEND_DOMAIN=${BACKEND_DOMAIN}
+      - ADMIN_API_PREFIX=${ADMIN_API_PREFIX}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - DISTRIBUTOR_ACCESS_PASSWORD=${DISTRIBUTOR_ACCESS_PASSWORD}
+    command: sh -c "npm install && npm run build && node dist/index.js"
+    restart: always
+```
+
+启动服务：
+
+```bash
+# 启动容器
+docker-compose up -d
+
+# 查看日志
+docker-compose logs -f
+
+# 检查服务状态
+curl http://localhost:3001/api/v1/distributor/status
+```
+
+预期响应：
+```json
+{
+  "status": "ok",
+  "tokenValid": true,
+  "passwordProtected": true,
+  "timestamp": 1234567890
+}
+```
+
+---
+
+### 步骤 4：Node.js 部署（备选）⚠️
+
+> ⚠️ 此方式作为备选方案，推荐优先使用 Docker Compose
 
 ```bash
 # 1. 安装依赖
-yarn install
+npm install
 
-# 2. 配置环境变量
-cp .env.example .env
-vim .env
+# 2. 编译
+npm run build
 
-# 3. 开发模式
-yarn dev
-
-# 4. 生产模式
-yarn build
-yarn start
+# 3. 启动服务
+npm start
 ```
 
-## API 接口
+**后台运行（使用 PM2）：**
 
-### 1. 查询用户信息
+```bash
+# 安装 PM2
+npm install -g pm2
+
+# 启动服务
+pm2 start dist/index.js --name v2et-middleware
+
+# 开机自启
+pm2 startup
+pm2 save
+
+# 查看日志
+pm2 logs v2et-middleware
+```
+
+---
+
+## 📡 API 接口
+
+### 1. 检查服务状态
+```bash
+GET /api/v1/distributor/status
+
+# 响应
+{
+  "status": "ok",
+  "tokenValid": true,
+  "passwordProtected": true,
+  "timestamp": 1234567890
+}
+```
+
+### 2. 访问验证
+```bash
+POST /api/v1/distributor/auth
+Content-Type: application/json
+
+{
+  "password": "your_access_password"
+}
+
+# 响应
+{
+  "success": true,
+  "token": "sess_xxx"
+}
+```
+
+### 3. 查询用户信息
 ```bash
 POST /api/v1/distributor/user/query
 Content-Type: application/json
@@ -77,7 +202,7 @@ Content-Type: application/json
 }
 ```
 
-### 2. 获取套餐列表
+### 4. 获取套餐列表
 ```bash
 POST /api/v1/distributor/plan/fetch
 
@@ -96,9 +221,11 @@ POST /api/v1/distributor/plan/fetch
 }
 ```
 
-### 3. 验证优惠券
+### 5. 验证优惠券
 ```bash
 POST /api/v1/distributor/coupon/check
+Content-Type: application/json
+
 {
   "code": "COUPON123",
   "plan_id": 1,
@@ -106,9 +233,11 @@ POST /api/v1/distributor/coupon/check
 }
 ```
 
-### 4. 执行兑换（核心接口）
+### 6. 执行兑换（核心接口）
 ```bash
 POST /api/v1/distributor/exchange
+Content-Type: application/json
+
 {
   "email": "user@example.com",
   "plan_id": 1,
@@ -127,7 +256,9 @@ POST /api/v1/distributor/exchange
 }
 ```
 
-## 环境变量说明
+---
+
+## ⚙️ 环境变量说明
 
 | 变量名 | 必填 | 说明 |
 |--------|------|------|
@@ -136,29 +267,30 @@ POST /api/v1/distributor/exchange
 | `ADMIN_API_PREFIX` | 是 | V2Board 后台路径（如 admin） |
 | `ADMIN_EMAIL` | 是 | V2Board 管理员邮箱 |
 | `ADMIN_PASSWORD` | 是 | V2Board 管理员密码 |
-| `MAIL_HOST` | 否 | SMTP 服务器地址 |
-| `MAIL_PORT` | 否 | SMTP 端口 |
-| `MAIL_USER` | 否 | SMTP 用户名 |
-| `MAIL_PASS` | 否 | SMTP 密码 |
+| `DISTRIBUTOR_ACCESS_PASSWORD` | 否 | 分销商后台访问密码 |
 
-## 安全说明
+---
+
+## 🔒 安全说明
 
 ⚠️ **重要**: 本中间件需要 V2Board 管理员权限，请妥善保管管理员账号信息！
 
-### 🔒 安全最佳实践
+### 安全最佳实践
 
 1. **不要将 `.env` 文件提交到 Git**
    - 项目已配置 `.gitignore`，自动忽略 `.env`
    - 推送代码前请确认：`git status` 中不显示 `.env`
 
-2. **生产环境部署**
-   - 建议使用 Docker 部署，通过环境变量注入配置
-   - 配置防火墙，只允许信任的 IP 访问中间件端口
-   - 使用 HTTPS 反向代理（Nginx/Caddy）
+2. **防火墙配置**
+   - 只允许信任的 IP 访问中间件端口
+   ```bash
+   # UFW 示例
+   ufw allow from 192.168.1.0/24 to any port 3001
+   ```
 
 3. **管理员账号权限收敛**（推荐）
    - 创建专用的分销商管理员账号
-   - 仅授予订单相关权限，不开放其他管理功能
+   - 仅授予「订单管理」和「用户管理」权限
 
 4. **网络隔离**
    - 中间件服务不要直接暴露在公网
@@ -167,13 +299,49 @@ POST /api/v1/distributor/exchange
 ### 🛡️ 检查清单
 
 部署前请确认：
-- [ ] `.env` 文件已添加到 `.gitignore`
-- [ ] `git status` 不显示 `.env` 文件
-- [ ] 管理员账号密码已修改为强密码
-- [ ] 防火墙已配置（如 UFW/iptables）
-- [ ] 生产环境使用 HTTPS
+- [ ] `.env` 文件未提交到 Git
+- [ ] 服务状态接口返回正常
+- [ ] 管理员 Token 初始化成功（日志显示 `SUCCESS`）
+- [ ] 防火墙已配置
+- [ ] 已备份 `.env` 配置文件
 
-## 开发说明
+---
+
+## 🩺 故障排查
+
+### 1. 服务无法启动
+
+```bash
+# Docker 方式
+docker-compose logs -f
+
+# Node.js 方式
+pm2 logs v2et-middleware
+```
+
+### 2. Token 初始化失败
+
+检查：
+- `ADMIN_EMAIL` 和 `ADMIN_PASSWORD` 是否正确
+- `ADMIN_API_PREFIX` 路径是否正确
+- 管理员能否正常登录 V2Board 后台
+
+### 3. 端口被占用
+
+```bash
+# 查看占用端口的进程
+lsof -ti:3001
+
+# 杀死进程
+lsof -ti:3001 | xargs kill -9
+
+# 重启服务
+docker-compose restart
+```
+
+---
+
+## 💻 开发说明
 
 ### 项目结构
 ```
@@ -187,9 +355,25 @@ src/
 
 ### 本地调试
 ```bash
-yarn dev
+# 安装依赖
+npm install
+
+# 开发模式
+npm run dev
+
 # 访问 http://localhost:3001/api/v1/distributor/status
 ```
+
+---
+
+## 🆘 需要帮助？
+
+遇到问题请提供：
+1. 部署方式（Docker/Node.js）
+2. 错误日志
+3. V2Board 版本
+
+---
 
 ## License
 
