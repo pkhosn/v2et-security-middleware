@@ -100,10 +100,13 @@ curl http://localhost:3001/api/v1/distributor/status
 cd /opt/v2et-security-middleware
 vim .env
 
-# 2. 重启容器（让新配置生效）
-docker compose restart
+# 2. 停止容器
+docker compose down
 
-# 3. 验证
+# 3. 重新构建并启动（会重新读取 .env）
+docker compose up -d --force-recreate
+
+# 4. 验证
 curl http://localhost:3001/api/v1/distributor/status
 ```
 
