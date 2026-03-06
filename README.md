@@ -24,12 +24,9 @@ V2Board 免登中间件服务 - 专为分销商兑换场景设计
 ### 步骤 1：拉取代码
 
 ```bash
-# 在服务器上创建目录
-mkdir -p /opt/v2et-security-middleware
-cd /opt/v2et-security-middleware
-
 # 克隆代码
-git clone https://github.com/pkhosn/v2et-security-middleware .
+git clone https://github.com/pkhosn/v2et-security-middleware 
+cd /root/v2et-security-middleware
 ```
 
 ### 步骤 2：配置环境变量
