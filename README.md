@@ -63,7 +63,7 @@ DISTRIBUTOR_ACCESS_PASSWORD=YourAccessPassword123
 
 ### 步骤 3：Docker Compose 部署（推荐）⭐
 
-创建 `docker-compose.yml` 文件：
+创建 `docker compose.yml` 文件：
 
 ```yaml
 version: '3.8'
@@ -93,10 +93,10 @@ services:
 
 ```bash
 # 启动容器
-docker-compose up -d
+docker compose up -d
 
 # 查看日志
-docker-compose logs -f
+docker compose logs -f
 
 # 检查服务状态
 curl http://localhost:3001/api/v1/distributor/status
@@ -121,7 +121,7 @@ curl http://localhost:3001/api/v1/distributor/status
 | 文件 | 用途 | 修改后操作 |
 |------|------|-----------|
 | `.env` | 修改 V2Board 地址、管理员账号、访问密码等 | 重启容器 |
-| `docker-compose.yml` | 修改端口、环境变量等 | 重新部署 |
+| `docker compose.yml` | 修改端口、环境变量等 | 重新部署 |
 | 源代码 | 修改 API 逻辑、功能等 | 重新构建并部署 |
 
 ### 场景 1：修改 `.env` 配置
@@ -132,7 +132,7 @@ cd /opt/v2et-security-middleware
 vim .env
 
 # 2. 重启容器（让新配置生效）
-docker-compose restart
+docker compose restart
 
 # 3. 验证
 curl http://localhost:3001/api/v1/distributor/status
@@ -145,18 +145,18 @@ curl http://localhost:3001/api/v1/distributor/status
 
 ---
 
-### 场景 2：修改 `docker-compose.yml`
+### 场景 2：修改 `docker compose.yml`
 
 ```bash
 # 1. 编辑配置
-vim docker-compose.yml
+vim docker compose.yml
 
 # 2. 重新部署（让新配置生效）
-docker-compose down
-docker-compose up -d
+docker compose down
+docker compose up -d
 
 # 3. 验证
-docker-compose ps
+docker compose ps
 ```
 
 **常见修改：**
@@ -181,11 +181,11 @@ git pull
 cp .env.backup .env
 
 # 5. 重新构建并启动
-docker-compose down
-docker-compose up -d --build
+docker compose down
+docker compose up -d --build
 
 # 6. 验证
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ---
@@ -204,8 +204,8 @@ git push
 # 3. 在服务器上更新
 cd /opt/v2et-security-middleware
 git pull
-docker-compose down
-docker-compose up -d --build
+docker compose down
+docker compose up -d --build
 
 # 4. 验证
 curl http://localhost:3001/api/v1/distributor/status
@@ -217,25 +217,25 @@ curl http://localhost:3001/api/v1/distributor/status
 
 ```bash
 # 查看服务状态
-docker-compose ps
+docker compose ps
 
 # 查看日志
-docker-compose logs -f
+docker compose logs -f
 
 # 重启服务
-docker-compose restart
+docker compose restart
 
 # 停止服务
-docker-compose down
+docker compose down
 
 # 启动服务
-docker-compose up -d
+docker compose up -d
 
 # 重新构建
-docker-compose up -d --build
+docker compose up -d --build
 
 # 删除容器和数据
-docker-compose down -v
+docker compose down -v
 ```
 
 ---
@@ -439,7 +439,7 @@ Content-Type: application/json
 
 ```bash
 # Docker 方式
-docker-compose logs -f
+docker compose logs -f
 
 # Node.js 方式
 pm2 logs v2et-middleware
@@ -462,7 +462,7 @@ lsof -ti:3001
 lsof -ti:3001 | xargs kill -9
 
 # 重启服务
-docker-compose restart
+docker compose restart
 ```
 
 ---
