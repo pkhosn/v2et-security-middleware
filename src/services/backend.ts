@@ -71,6 +71,14 @@ export class BackendService {
   async request<T>(url: string, init: RequestInit): Promise<T> {
     // 检查调用方是否已传入 Authorization header（用户 token）
     const hasUserAuth = init.headers && (init.headers as Record<string, string>)['Authorization']
+    const usingAdminToken = this.adminToken && !hasUserAuth
+    
+    console.log(chalk.blue('[Backend.request]'), {
+      url: url.replace(backendDomain, ''),
+      hasUserAuth: !!hasUserAuth,
+      usingAdminToken,
+      adminTokenPrefix: this.adminToken ? this.adminToken.slice(0, 20) + '...' : 'none'
+    })
     
     const response = await fetch(url, {
       ...init,

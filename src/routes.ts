@@ -304,12 +304,18 @@ router.all('/api/v1/:segments*', async (ctx: Koa.Context) => {
   const path = `/api/v1/${Array.isArray(segments) ? segments.join('/') : segments}`
   const url = `${backendDomain}${path}`
 
-  console.log(chalk.gray('代理转发:'), `${ctx.method} ${url}`)
+  const authHeader = ctx.headers['authorization'] as string
+  console.log(chalk.gray('[代理转发]'), {
+    method: ctx.method,
+    path,
+    hasAuthHeader: !!authHeader,
+    authHeaderPrefix: authHeader ? authHeader.slice(0, 20) + '...' : 'none',
+    requestBody: JSON.stringify((ctx.request as any).body).slice(0, 200)
+  })
 
   try {
     const backend = BackendService.instance
     // 重要：传递前端传来的 Authorization header，确保用户身份正确
-    const authHeader = ctx.headers['authorization'] as string
     const response = await backend.request(url, {
       method: ctx.method,
       body: JSON.stringify((ctx.request as any).body),
