@@ -308,11 +308,14 @@ router.all('/api/v1/:segments*', async (ctx: Koa.Context) => {
 
   try {
     const backend = BackendService.instance
+    // 重要：传递前端传来的 Authorization header，确保用户身份正确
+    const authHeader = ctx.headers['authorization'] as string
     const response = await backend.request(url, {
       method: ctx.method,
       body: JSON.stringify((ctx.request as any).body),
       headers: {
         'Content-Type': 'application/json',
+        ...(authHeader && { 'Authorization': authHeader }),
       },
     })
 

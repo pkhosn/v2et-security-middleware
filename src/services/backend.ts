@@ -69,11 +69,15 @@ export class BackendService {
   }
 
   async request<T>(url: string, init: RequestInit): Promise<T> {
+    // 检查调用方是否已传入 Authorization header（用户 token）
+    const hasUserAuth = init.headers && (init.headers as Record<string, string>)['Authorization']
+    
     const response = await fetch(url, {
       ...init,
       headers: {
         'Content-Type': 'application/json',
-        ...(this.adminToken && { 'Authorization': this.adminToken }),
+        // 只有当调用方没有传入用户 token 时，才使用 adminToken
+        ...(this.adminToken && !hasUserAuth && { 'Authorization': this.adminToken }),
         ...init.headers,
       },
     })
